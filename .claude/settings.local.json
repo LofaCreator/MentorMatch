@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/nusvi/.claude/**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm --version)",
+      "Bash(cd /tmp/uipro-skill && echo \"===ALL FILES under .claude/skills===\" && find .claude/skills -type f | sort && echo \"\" && echo \"===dir count===\" && find .claude/skills -type d | wc -l && echo \"===total size===\" && du -sh .claude/skills)",
+      "Bash(npm install *)",
+      "Bash(python scripts/search.py --help)",
+      "Bash(python scripts/search.py \"dashboard\" --domain style --max-results 2)",
+      "Bash(claude mcp *)",
+      "PowerShell($c = Get-Command claude -ErrorAction SilentlyContinue; if \\($c\\) { $c.Source } else { \"not found via Get-Command\" }; Write-Output \"---npm global---\"; npm config get prefix)",
+      "Bash(ls -la \"$HOME/AppData/Roaming/npm/\" 2>/dev/null | grep -i claude; echo \"---local---\"; ls -la \"$HOME/.local/bin/\" 2>/dev/null | grep -i claude; echo \"---AppData/Local---\"; ls \"$HOME/AppData/Local/Programs/\" 2>/dev/null | grep -i claude; echo \"---.claude/local---\"; ls \"$HOME/.claude/\" 2>/dev/null)",
+      "Bash(node -e 'const c=require\\('\\\\''C:\\\\Users\\\\nusvi/.claude.json'\\\\''\\); console.log\\(Object.keys\\(c\\).join\\('\\\\''\\\\n'\\\\''\\)\\)')",
+      "PowerShell(npm view \"@21st-dev/magic\" version 2>&1)",
+      "Bash(python scripts/search.py \"mentorship platform students graduates career education swipe match social\" --design-system -p \"MentorMatch\" -f markdown)",
+      "Bash(python -m pip install -q Flask)",
+      "Bash(python app.py)",
+      "Bash(curl -s -i http://127.0.0.1:5000/)",
+      "Bash(curl -s -c /tmp/cj.txt -X POST http://127.0.0.1:5000/api/login -H \"Content-Type: application/json\" -d '{\"email\":\"anna@demo.io\",\"password\":\"demo1234\"}')",
+      "Bash(curl -s -b /tmp/cj.txt http://127.0.0.1:5000/api/deck)",
+      "mcp__Claude_Preview__preview_start",
+      "mcp__magic__21st_magic_component_inspiration",
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(python scripts/search.py \"dark theme social community app calm pleasant purple lavender\" --domain color -n 3)"
+    ]
+  }
+}

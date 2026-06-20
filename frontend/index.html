@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MentorMatch — найди ментора, как в Tinder</title>
+  <meta name="description" content="Платформа менторства: студенты и выпускники находят друг друга свайпами. Помощь в карьере и учёбе." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Climate+Crisis&family=WindSong:wght@400;500&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%234B4453'/><circle cx='50' cy='50' r='30' fill='none' stroke='%23fff' stroke-width='4'/><circle cx='50' cy='20' r='7' fill='%23fff'/><circle cx='78' cy='66' r='7' fill='%23fff'/></svg>" />
+</head>
+<body>
+  <!-- ===== Top bar ===== -->
+  <header class="topbar hidden" id="topbar">
+    <a class="brand" href="#" aria-label="MentorMatch">
+      <span class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+      </span>
+      <span class="wordmark"><span class="mentor">Mentor</span><span class="match">Match</span></span>
+    </a>
+    <nav id="mainNav" aria-label="Основная навигация">
+      <button class="nav-tab" data-view="home" aria-label="Главная">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+        <span class="label">Главная</span>
+      </button>
+      <button class="nav-tab" data-view="deck" aria-label="Искать">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <span class="label">Искать</span>
+      </button>
+      <button class="nav-tab" data-view="matches" aria-label="Мэтчи">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        <span class="label">Мэтчи</span>
+        <span class="badge hidden" id="matchBadge">0</span>
+      </button>
+      <button class="nav-tab" data-view="top" aria-label="Топ менторов">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+        <span class="label">Топ</span>
+      </button>
+      <button class="nav-tab" data-view="profile" aria-label="Профиль">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span class="label">Профиль</span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="app"><div class="spinner" role="status" aria-label="Загрузка"></div></main>
+
+  <footer class="footer hidden" id="footer">
+    <div class="footer-inner">
+      <div>
+        <span class="brand"><span class="wordmark"><span class="mentor">Mentor</span><span class="match">Match</span></span></span>
+        <p class="f-tag">Платформа менторства, где студенты и выпускники находят друг друга свайпами.</p>
+      </div>
+      <div class="f-cols">
+        <div class="f-col">
+          <h5>Платформа</h5>
+          <a data-view="home">Главная</a>
+          <a data-view="deck">Искать ментора</a>
+          <a data-view="matches">Мои мэтчи</a>
+        </div>
+        <div class="f-col">
+          <h5>Компания</h5>
+          <a data-view="home">О нас</a>
+          <a data-view="home">Как это работает</a>
+          <a data-view="profile">Профиль</a>
+        </div>
+        <div class="f-col">
+          <h5>Поддержка</h5>
+          <a href="mailto:help@mentormatch.io">help@mentormatch.io</a>
+          <a data-view="matches">Чат поддержки</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 MentorMatch — сделано ребятами из БГИТУ Клюев, Васильев, Морозов</div>
+  </footer>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot" aria-live="polite"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
