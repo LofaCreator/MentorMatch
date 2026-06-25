@@ -947,9 +947,6 @@ body { display: flex; flex-direction: column; }
    интерактивный фон, анимированный баннер топа
    ============================================================ */
 
-/* нет горизонтального скролла от full-bleed (clip не ломает sticky-топбар) */
-body { overflow-x: clip; }
-
 /* ----- hero на всю ширину секции (full-bleed) ----- */
 .home-hero {
   width: auto;
@@ -967,36 +964,40 @@ body { overflow-x: clip; }
               linear-gradient(0deg, rgba(13,10,20,0.45), transparent 32%);
 }
 
-/* ----- дизайнерский заголовок: Climate Crisis + мономикс ----- */
+/* ----- дизайнерский заголовок: Russo One + рукописный красный акцент ----- */
 .hero-title {
   max-width: none; text-shadow: none;
-  display: flex; flex-direction: column; gap: 0.02em;
-  line-height: 0.92; margin: 6px 0 0;
-  filter: drop-shadow(0 6px 26px rgba(0,0,0,0.4));   /* глубина + легибельность */
+  display: flex; flex-direction: column;
+  line-height: 0.92; margin: 6px 0 0.3em;
 }
 .ht-line { display: block; }
-.ht-grad {
-  font-family: var(--font-display); letter-spacing: -0.02em;
-  font-size: clamp(46px, 11vw, 138px);
-  background: linear-gradient(100deg, #fff 0%, var(--lavender) 52%, var(--accent) 100%);
+/* «Найди» и цель — Russo One */
+.ht-find, .ht-target {
+  font-family: 'Russo One', var(--font-display); letter-spacing: -0.01em;
+  text-transform: uppercase;
+  filter: drop-shadow(0 6px 24px rgba(0,0,0,0.45));
+}
+.ht-find {
+  font-size: clamp(40px, 8.5vw, 104px);
+  background: linear-gradient(100deg, #fff 0%, var(--lavender) 60%, #fff 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.ht-stroke {                                          /* контурные буквы — сквозь них видно живой фон */
-  font-family: var(--font-display); letter-spacing: -0.01em;
-  font-size: clamp(38px, 9vw, 108px);
-  color: transparent; -webkit-text-stroke: 1.6px rgba(255,255,255,0.78);
-  margin-left: clamp(6px, 4vw, 70px);
+.ht-target {
+  font-size: clamp(44px, 9.5vw, 122px); color: #fff;
 }
-.ht-mono {
-  font-family: var(--font-body); font-weight: 800; text-transform: lowercase;
-  font-size: clamp(19px, 4vw, 48px); letter-spacing: -0.02em;
-  color: rgba(255,255,255,0.92); margin-top: 0.2em;
+/* «и расти быстрее» — Great Vibes (кириллица через Marck Script), красный, наезжает сверху */
+.ht-grow {
+  font-family: 'Great Vibes', 'Marck Script', cursive;
+  font-size: clamp(46px, 10vw, 128px); line-height: 0.8;
+  color: #F1465F;
+  align-self: flex-start;
+  margin: -0.42em 0 0 clamp(24px, 9vw, 150px);   /* наезд на верхнюю строку */
+  transform: rotate(-5deg);
+  text-shadow: 0 6px 22px rgba(0,0,0,0.5), 0 0 30px rgba(241,70,95,0.35);
+  position: relative; z-index: 3;
 }
-.ht-accent {
-  background: linear-gradient(100deg, var(--lavender), var(--accent));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.home-hero .lead { max-width: 50ch; }
+.home-hero .lead { max-width: 50ch; margin-top: 8px; }
+.hero-inner { will-change: transform, opacity; }   /* плавный параллакс при скролле (JS) */
 
 /* ----- баннер «Топ менторов месяца»: блик-свип + контурное свечение 60fps ----- */
 @property --tb-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
@@ -1023,6 +1024,6 @@ body { overflow-x: clip; }
 @keyframes tbSpin { to { --tb-angle: 360deg; } }
 
 @media (max-width: 560px) {
-  .ht-stroke { margin-left: 0; }
+  .ht-grow { margin-left: clamp(12px, 6vw, 40px); transform: rotate(-4deg); }
   .hero-title { line-height: 0.96; }
 }

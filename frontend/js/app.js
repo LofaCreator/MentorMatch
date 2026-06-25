@@ -479,9 +479,9 @@ function renderHome() {
         <div class="hero-inner stagger">
           <span class="eyebrow"><span class="dot"></span> Привет, ${esc(first)}</span>
           <h1 class="hero-title">
-            <span class="ht-line ht-grad">Найди</span>
-            <span class="ht-line ht-stroke">${esc(target)}</span>
-            <span class="ht-line ht-mono">и&nbsp;расти <span class="ht-accent">быстрее</span></span>
+            <span class="ht-line ht-find">Найди</span>
+            <span class="ht-line ht-target">${esc(target)}</span>
+            <span class="ht-line ht-grow">и&nbsp;расти быстрее</span>
           </h1>
           <p class="lead">Листай анкеты как в Tinder, ставь «интересно» и получай мэтч при взаимной симпатии. Затем — живое общение в чате о карьере и учёбе.</p>
           <div class="cta-row">
@@ -546,9 +546,23 @@ function renderHome() {
   app.appendChild(view);
   view.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(b.dataset.go)));
   initHeroShader();
+  initHeroParallax(view.querySelector('.hero-inner'));
   view.querySelectorAll('[data-scroll]').forEach((b) => (b.onclick = () => {
     document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
+}
+
+/* плавный параллакс hero при скролле: контент уезжает вверх и растворяется */
+function initHeroParallax(inner) {
+  if (!inner || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const onScroll = () => {
+    if (!inner.isConnected) { window.removeEventListener('scroll', onScroll); return; } // ушли с главной — снимаем слушатель
+    const y = Math.min(window.scrollY, 640);
+    inner.style.transform = `translateY(${y * 0.22}px)`;
+    inner.style.opacity = String(Math.max(0, 1 - y / 560));
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 }
 
 /* ---------- анимированный shader-фон hero (vanilla WebGL, палитра бренда) ---------- */
