@@ -14,8 +14,25 @@ from db import get_db, init_db
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
 AVATAR_COLORS = ["#E11D48", "#2563EB", "#7C3AED", "#059669", "#D97706", "#0891B2", "#DB2777", "#4F46E5"]
 
+DEBUG = os.environ.get("FLASK_DEBUG") == "1"  # debug включается ЯВНО; по умолчанию выключен (без Werkzeug-дебаггера в проде)
+
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
-app.secret_key = os.environ.get("MENTORMATCH_SECRET", "dev-secret-change-me")
+# нет заданного секрета → случайный (сессии собьются при рестарте, но ключ не угадать).
+# Для постоянных сессий задай MENTORMATCH_SECRET в окружении.
+app.secret_key = os.environ.get("MENTORMATCH_SECRET") or os.urandom(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,                       # JS не достанет cookie сессии (XSS-митигейшн)
+    SESSION_COOKIE_SAMESITE="Lax",                      # cross-site POST не шлёт cookie (CSRF-митигейшн)
+    SESSION_COOKIE_SECURE=bool(os.environ.get("MENTORMATCH_SECURE")),  # за HTTPS выставь MENTORMATCH_SECURE=1
+)
+
+
+@app.after_request
+def _security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")  # без кликджекинга
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    return resp
 
 
 # ---------- db lifecycle ----------
@@ -484,4 +501,4 @@ def index():
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=True)
+    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=DEBUG)

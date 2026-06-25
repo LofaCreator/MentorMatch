@@ -476,12 +476,18 @@ function renderHome() {
     <div class="view">
       <section class="home-hero">
         <canvas class="hero-shader" id="heroShader" aria-hidden="true"></canvas>
-        <span class="eyebrow"><span class="dot"></span> Привет, ${esc(first)}</span>
-        <h1>Найди ${esc(target)} и расти быстрее</h1>
-        <p class="lead">Листай анкеты как в Tinder, ставь «интересно» и получай мэтч при взаимной симпатии. Затем — живое общение в чате о карьере и учёбе.</p>
-        <div class="cta-row">
-          <button class="btn btn-white" data-go="deck">Начать поиск</button>
-          <button class="btn btn-glass" data-scroll="guide">Как это работает</button>
+        <div class="hero-inner stagger">
+          <span class="eyebrow"><span class="dot"></span> Привет, ${esc(first)}</span>
+          <h1 class="hero-title">
+            <span class="ht-line ht-grad">Найди</span>
+            <span class="ht-line ht-stroke">${esc(target)}</span>
+            <span class="ht-line ht-mono">и&nbsp;расти <span class="ht-accent">быстрее</span></span>
+          </h1>
+          <p class="lead">Листай анкеты как в Tinder, ставь «интересно» и получай мэтч при взаимной симпатии. Затем — живое общение в чате о карьере и учёбе.</p>
+          <div class="cta-row">
+            <button class="btn btn-white" data-go="deck">Начать поиск</button>
+            <button class="btn btn-glass" data-scroll="guide">Как это работает</button>
+          </div>
         </div>
       </section>
 
@@ -556,7 +562,7 @@ function initHeroShader() {
   // живая aurora: domain-warped fbm в палитре бренда, тёмная база — вписывается в тему
   const fs = `
     precision highp float;
-    uniform vec2 u_res; uniform float u_t;
+    uniform vec2 u_res; uniform float u_t; uniform vec2 u_mouse;
     vec3 C_BG = vec3(0.082,0.066,0.118); // глубокий плам
     vec3 C1 = vec3(0.760,0.690,0.863);   // лаванда #C2B0DC
     vec3 C2 = vec3(0.765,0.604,0.557);   // розовый #C39A8E
@@ -573,6 +579,7 @@ function initHeroShader() {
     void main(){
       vec2 uv = gl_FragCoord.xy / u_res.xy;
       vec2 p = uv; p.x *= u_res.x / u_res.y;
+      p += (u_mouse - 0.5) * 0.35;            // курсор «таскает» поле — лёгкий параллакс
       float t = u_t * 0.05;
       vec2 q = vec2(fbm(p*1.6 + vec2(0.0, t)), fbm(p*1.6 + vec2(5.2, -t)));
       vec2 r = vec2(fbm(p*1.6 + 2.0*q + vec2(1.7, t*1.3)), fbm(p*1.6 + 2.0*q + vec2(8.3, -t*0.9)));
@@ -583,6 +590,8 @@ function initHeroShader() {
       col = mix(col, C2, clamp(r.x*r.x*1.3, 0.0, 1.0));
       col = mix(col, C4, clamp(pow(r.y, 2.0)*0.7, 0.0, 1.0));
       col *= 0.82 + 0.30*f;                       // глубина
+      float md = distance(uv, u_mouse);
+      col += C1 * 0.18 * exp(-md*md*8.0);         // мягкое световое пятно у курсора
       col += 0.025 * (hash(uv*u_res.xy*0.5 + t) - 0.5); // тонкое зерно
       gl_FragColor = vec4(col, 1.0);
     }`;
@@ -602,6 +611,19 @@ function initHeroShader() {
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const uRes = gl.getUniformLocation(prog, 'u_res');
   const uT = gl.getUniformLocation(prog, 'u_t');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // курсор слушаем на секции (канвас pointer-events:none), нормируем 0..1, y перевёрнут под gl
+  const hero = canvas.closest('.home-hero') || canvas.parentElement;
+  const mouse = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 };
+  const onMove = (e) => {
+    const r = hero.getBoundingClientRect();
+    mouse.tx = (e.clientX - r.left) / r.width;
+    mouse.ty = 1 - (e.clientY - r.top) / r.height;
+  };
+  const onLeave = () => { mouse.tx = 0.5; mouse.ty = 0.5; };
+  hero.addEventListener('pointermove', onMove);
+  hero.addEventListener('pointerleave', onLeave);
 
   const resize = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -613,13 +635,20 @@ function initHeroShader() {
   let raf = 0, start = performance.now();
   const draw = (now) => {
     resize();
+    mouse.x += (mouse.tx - mouse.x) * 0.08;  // плавное «догоняние» курсора
+    mouse.y += (mouse.ty - mouse.y) * 0.08;
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uT, (now - start) / 1000);
+    gl.uniform2f(uMouse, mouse.x, mouse.y);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!reduced) raf = requestAnimationFrame(draw);
   };
   raf = requestAnimationFrame(draw);
-  heroShaderStop = () => { cancelAnimationFrame(raf); };
+  heroShaderStop = () => {
+    cancelAnimationFrame(raf);
+    hero.removeEventListener('pointermove', onMove);
+    hero.removeEventListener('pointerleave', onLeave);
+  };
 }
 
 /* ===================================================================
@@ -1191,30 +1220,34 @@ function paintMatchOrbit(body) {
         <span class="orbit-name">${esc(u.name.split(' ')[0])}</span>
       </button>`);
     node.onclick = () => openChat(mt);
-    node.addEventListener('pointerenter', () => { hover = i; });
-    node.addEventListener('pointerleave', () => { if (hover === i) hover = -1; });
+    // focused-класс ставим в обработчиках, а не каждый кадр
+    node.addEventListener('pointerenter', () => { hover = i; node.classList.add('focused'); });
+    node.addEventListener('pointerleave', () => { if (hover === i) hover = -1; node.classList.remove('focused'); });
     stage.appendChild(node);
-    return { node, base };
+    return { node, base, z: 0 };
   });
+
+  // радиус меряем один раз и по ресайзу, а не на каждом кадре (чтение layout в цикле = reflow-тормоза)
+  let r = Math.max(70, stage.clientWidth / 2 - 38);
+  const ro = new ResizeObserver(() => { r = Math.max(70, stage.clientWidth / 2 - 38); });
+  ro.observe(stage);
 
   let phi = TOP;
   const frame = () => {
-    if (!document.body.contains(orbit)) return; // ушли со страницы — стоп
+    if (!document.body.contains(orbit)) { ro.disconnect(); return; } // ушли со страницы — стоп
     if (hover >= 0) {
       const target = TOP - items[hover].base;
-      let d = ((target - phi + Math.PI) % (Math.PI * 2)) - Math.PI; // кратчайший доворот
+      const d = ((target - phi + Math.PI) % (Math.PI * 2)) - Math.PI; // кратчайший доворот
       phi += d * 0.12;
     } else {
       phi += 0.0035;
     }
-    const r = Math.max(70, stage.clientWidth / 2 - 38);
-    items.forEach((it, i) => {
+    for (const it of items) {
       const a = it.base + phi;
-      const x = Math.cos(a) * r, y = Math.sin(a) * r;
-      it.node.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-      it.node.style.zIndex = String(10 + Math.round(Math.cos(a - TOP) * 8));
-      it.node.classList.toggle('focused', i === hover);
-    });
+      it.node.style.transform = `translate(calc(-50% + ${Math.cos(a) * r}px), calc(-50% + ${Math.sin(a) * r}px))`;
+      const z = 10 + Math.round(Math.cos(a - TOP) * 8); // глубина → слой
+      if (z !== it.z) { it.node.style.zIndex = z; it.z = z; } // пишем zIndex только при смене
+    }
     requestAnimationFrame(frame);
   };
   frame();
