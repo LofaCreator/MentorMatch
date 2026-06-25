@@ -476,18 +476,12 @@ function renderHome() {
     <div class="view">
       <section class="home-hero">
         <canvas class="hero-shader" id="heroShader" aria-hidden="true"></canvas>
-        <div class="hero-inner stagger">
-          <span class="eyebrow"><span class="dot"></span> Привет, ${esc(first)}</span>
-          <h1 class="hero-title">
-            <span class="ht-line ht-find">Найди</span>
-            <span class="ht-line ht-target">${esc(target)}</span>
-            <span class="ht-line ht-grow">и&nbsp;расти быстрее</span>
-          </h1>
-          <p class="lead">Листай анкеты как в Tinder, ставь «интересно» и получай мэтч при взаимной симпатии. Затем — живое общение в чате о карьере и учёбе.</p>
-          <div class="cta-row">
-            <button class="btn btn-white" data-go="deck">Начать поиск</button>
-            <button class="btn btn-glass" data-scroll="guide">Как это работает</button>
-          </div>
+        <span class="eyebrow"><span class="dot"></span> Привет, ${esc(first)}</span>
+        <h1>Найди ${esc(target)} и расти быстрее</h1>
+        <p class="lead">Листай анкеты как в Tinder, ставь «интересно» и получай мэтч при взаимной симпатии. Затем — живое общение в чате о карьере и учёбе.</p>
+        <div class="cta-row">
+          <button class="btn btn-white" data-go="deck">Начать поиск</button>
+          <button class="btn btn-glass" data-scroll="guide">Как это работает</button>
         </div>
       </section>
 
@@ -546,23 +540,9 @@ function renderHome() {
   app.appendChild(view);
   view.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(b.dataset.go)));
   initHeroShader();
-  initHeroParallax(view.querySelector('.hero-inner'));
   view.querySelectorAll('[data-scroll]').forEach((b) => (b.onclick = () => {
     document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
-}
-
-/* плавный параллакс hero при скролле: контент уезжает вверх и растворяется */
-function initHeroParallax(inner) {
-  if (!inner || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const onScroll = () => {
-    if (!inner.isConnected) { window.removeEventListener('scroll', onScroll); return; } // ушли с главной — снимаем слушатель
-    const y = Math.min(window.scrollY, 640);
-    inner.style.transform = `translateY(${y * 0.22}px)`;
-    inner.style.opacity = String(Math.max(0, 1 - y / 560));
-  };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
 }
 
 /* ---------- анимированный shader-фон hero (vanilla WebGL, палитра бренда) ---------- */
@@ -576,7 +556,7 @@ function initHeroShader() {
   // живая aurora: domain-warped fbm в палитре бренда, тёмная база — вписывается в тему
   const fs = `
     precision highp float;
-    uniform vec2 u_res; uniform float u_t; uniform vec2 u_mouse;
+    uniform vec2 u_res; uniform float u_t;
     vec3 C_BG = vec3(0.082,0.066,0.118); // глубокий плам
     vec3 C1 = vec3(0.760,0.690,0.863);   // лаванда #C2B0DC
     vec3 C2 = vec3(0.765,0.604,0.557);   // розовый #C39A8E
@@ -593,7 +573,6 @@ function initHeroShader() {
     void main(){
       vec2 uv = gl_FragCoord.xy / u_res.xy;
       vec2 p = uv; p.x *= u_res.x / u_res.y;
-      p += (u_mouse - 0.5) * 0.35;            // курсор «таскает» поле — лёгкий параллакс
       float t = u_t * 0.05;
       vec2 q = vec2(fbm(p*1.6 + vec2(0.0, t)), fbm(p*1.6 + vec2(5.2, -t)));
       vec2 r = vec2(fbm(p*1.6 + 2.0*q + vec2(1.7, t*1.3)), fbm(p*1.6 + 2.0*q + vec2(8.3, -t*0.9)));
@@ -604,8 +583,6 @@ function initHeroShader() {
       col = mix(col, C2, clamp(r.x*r.x*1.3, 0.0, 1.0));
       col = mix(col, C4, clamp(pow(r.y, 2.0)*0.7, 0.0, 1.0));
       col *= 0.82 + 0.30*f;                       // глубина
-      float md = distance(uv, u_mouse);
-      col += C1 * 0.18 * exp(-md*md*8.0);         // мягкое световое пятно у курсора
       col += 0.025 * (hash(uv*u_res.xy*0.5 + t) - 0.5); // тонкое зерно
       gl_FragColor = vec4(col, 1.0);
     }`;
@@ -625,19 +602,6 @@ function initHeroShader() {
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const uRes = gl.getUniformLocation(prog, 'u_res');
   const uT = gl.getUniformLocation(prog, 'u_t');
-  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
-
-  // курсор слушаем на секции (канвас pointer-events:none), нормируем 0..1, y перевёрнут под gl
-  const hero = canvas.closest('.home-hero') || canvas.parentElement;
-  const mouse = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 };
-  const onMove = (e) => {
-    const r = hero.getBoundingClientRect();
-    mouse.tx = (e.clientX - r.left) / r.width;
-    mouse.ty = 1 - (e.clientY - r.top) / r.height;
-  };
-  const onLeave = () => { mouse.tx = 0.5; mouse.ty = 0.5; };
-  hero.addEventListener('pointermove', onMove);
-  hero.addEventListener('pointerleave', onLeave);
 
   const resize = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -649,20 +613,13 @@ function initHeroShader() {
   let raf = 0, start = performance.now();
   const draw = (now) => {
     resize();
-    mouse.x += (mouse.tx - mouse.x) * 0.08;  // плавное «догоняние» курсора
-    mouse.y += (mouse.ty - mouse.y) * 0.08;
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uT, (now - start) / 1000);
-    gl.uniform2f(uMouse, mouse.x, mouse.y);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!reduced) raf = requestAnimationFrame(draw);
   };
   raf = requestAnimationFrame(draw);
-  heroShaderStop = () => {
-    cancelAnimationFrame(raf);
-    hero.removeEventListener('pointermove', onMove);
-    hero.removeEventListener('pointerleave', onLeave);
-  };
+  heroShaderStop = () => { cancelAnimationFrame(raf); };
 }
 
 /* ===================================================================

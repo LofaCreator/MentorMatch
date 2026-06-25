@@ -943,61 +943,8 @@ body { display: flex; flex-direction: column; }
 .tag:hover { transform: translateY(-1px); border-color: var(--primary); color: var(--ink); }
 
 /* ============================================================
-   PHASE 8: главная — full-bleed hero, дизайнерская типографика,
-   интерактивный фон, анимированный баннер топа
+   PHASE 8: анимированный баннер «Топ менторов месяца»
    ============================================================ */
-
-/* ----- hero на всю ширину секции (full-bleed) ----- */
-.home-hero {
-  width: auto;
-  margin-inline: calc(50% - 50vw);          /* выходим из паддингов #app к краям вьюпорта */
-  border-radius: 0; border-left: none; border-right: none;
-  padding: clamp(60px, 11vw, 150px) clamp(24px, 5vw, 64px);
-}
-.hero-shader { pointer-events: none; }       /* фон не перехватывает курсор (фикс бага слева) */
-.hero-inner { position: relative; z-index: 1; max-width: 1104px; margin: 0 auto; }
-
-/* скрим слева — читаемость текста поверх живого фона */
-.home-hero::after {
-  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(90deg, rgba(13,10,20,0.62) 0%, rgba(13,10,20,0.22) 42%, transparent 68%),
-              linear-gradient(0deg, rgba(13,10,20,0.45), transparent 32%);
-}
-
-/* ----- дизайнерский заголовок: Russo One + рукописный красный акцент ----- */
-.hero-title {
-  max-width: none; text-shadow: none;
-  display: flex; flex-direction: column;
-  line-height: 0.92; margin: 6px 0 0.3em;
-}
-.ht-line { display: block; }
-/* «Найди» и цель — Russo One */
-.ht-find, .ht-target {
-  font-family: 'Russo One', var(--font-display); letter-spacing: -0.01em;
-  text-transform: uppercase;
-  filter: drop-shadow(0 6px 24px rgba(0,0,0,0.45));
-}
-.ht-find {
-  font-size: clamp(40px, 8.5vw, 104px);
-  background: linear-gradient(100deg, #fff 0%, var(--lavender) 60%, #fff 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.ht-target {
-  font-size: clamp(44px, 9.5vw, 122px); color: #fff;
-}
-/* «и расти быстрее» — Great Vibes (кириллица через Marck Script), красный, наезжает сверху */
-.ht-grow {
-  font-family: 'Great Vibes', 'Marck Script', cursive;
-  font-size: clamp(46px, 10vw, 128px); line-height: 0.8;
-  color: #F1465F;
-  align-self: flex-start;
-  margin: -0.42em 0 0 clamp(24px, 9vw, 150px);   /* наезд на верхнюю строку */
-  transform: rotate(-5deg);
-  text-shadow: 0 6px 22px rgba(0,0,0,0.5), 0 0 30px rgba(241,70,95,0.35);
-  position: relative; z-index: 3;
-}
-.home-hero .lead { max-width: 50ch; margin-top: 8px; }
-.hero-inner { will-change: transform, opacity; }   /* плавный параллакс при скролле (JS) */
 
 /* ----- баннер «Топ менторов месяца»: блик-свип + контурное свечение 60fps ----- */
 @property --tb-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
@@ -1022,8 +969,3 @@ body { display: flex; flex-direction: column; }
 .top-banner > * { position: relative; z-index: 1; }   /* контент над бликом, под кольцом-обводкой */
 @keyframes tbSheen { 0% { background-position: 145% 0; } 55%, 100% { background-position: -45% 0; } }
 @keyframes tbSpin { to { --tb-angle: 360deg; } }
-
-@media (max-width: 560px) {
-  .ht-grow { margin-left: clamp(12px, 6vw, 40px); transform: rotate(-4deg); }
-  .hero-title { line-height: 0.96; }
-}
