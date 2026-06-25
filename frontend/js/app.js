@@ -9,8 +9,108 @@ const footer = document.getElementById('footer');
 const modalRoot = document.getElementById('modalRoot');
 const toastRoot = document.getElementById('toastRoot');
 let globeInstance = null; // активный экземпляр cobe, чтобы уничтожать при уходе
+let heroShaderStop = null; // остановка анимации shader-фона на Home
+let fxStop = null; // остановка интерактивного неонового фона
 
 const state = { me: null, deck: [], deckIndex: 0, matches: [] };
+let matchView = 'list'; // режим просмотра мэтчей: list | orbit
+
+/* партнёры платформы — ghost-логотипы плывут на фоне экрана входа */
+const PARTNER_LOGOS = [
+  '<svg viewBox="0 0 256 256" fill="#fff"><path d="M136.2 184.4c-58.3 0-91.6-40-93-106.6h29.2c1 48.9 22.5 69.6 39.6 73.8V77.9h27.5V120c16.9-1.8 34.6-21 40.5-42.1h27.5c-4.6 26-23.8 45.2-37.4 53.1 13.7 6.4 35.5 23.1 43.8 53.4h-30.3c-6.5-20.3-22.7-36-44.2-38.1v38.1h-3.2z"/></svg>',
+  '<svg viewBox="0 0 54 80" fill="#fff"><path d="M13.3 80c7.4 0 13.4-6 13.4-13.3V53.3H13.3C6 53.3 0 59.3 0 66.7 0 74 6 80 13.3 80zM0 40c0-7.4 6-13.3 13.3-13.3h13.4v26.6H13.3C6 53.3 0 47.3 0 40zM0 13.3C0 6 6 0 13.3 0h13.4v26.7H13.3C6 26.7 0 20.7 0 13.3zM26.7 0H40c7.4 0 13.3 6 13.3 13.3 0 7.4-6 13.4-13.3 13.4H26.7V0zM53.3 40c0 7.4-6 13.3-13.3 13.3-7.4 0-13.4-6-13.4-13.3 0-7.4 6-13.3 13.4-13.3 7.3 0 13.3 6 13.3 13.3z"/></svg>',
+  '<svg viewBox="0 0 256 268" fill="#fff"><path d="M16 11.5 164 .6c18.2-1.6 22.9-.5 34.3 7.8l47.2 33.3c8 5.7 10.5 7.3 10.5 13.5v182.5c0 11.4-4.2 18.2-18.7 19.2L65.4 267.4c-10.9.5-16.1-1-21.8-8.3L8.8 213.8C2.6 205.5 0 199.3 0 192V29.7c0-9.3 4.2-17.2 16-18.2zm153.2 41.7c11.9-.9 18.1 3.1 22.8 6.8L216 76.9V224c0 6.8-1 12.5-10.4 13l-161.5 9.4c-9.3.5-13.5-2.6-13.5-10.9V81.2c0-6.8 2.1-9.9 8.3-10.4z"/></svg>',
+  '<svg viewBox="0 0 256 250" fill="#fff"><path d="M128 0C57.3 0 0 57.3 0 128c0 56.6 36.7 104.6 87.6 121.6 6.4 1.2 8.8-2.8 8.8-6.2 0-3-.1-11.1-.2-21.8-35.6 7.7-43.1-17.2-43.1-17.2-5.8-14.8-14.2-18.7-14.2-18.7-11.6-7.9.9-7.8.9-7.8 12.8.9 19.6 13.2 19.6 13.2 11.4 19.6 30 13.9 37.3 10.6 1.2-8.3 4.5-13.9 8.1-17.1-28.4-3.2-58.3-14.2-58.3-63.2 0-14 5-25.4 13.2-34.4-1.3-3.2-5.7-16.2 1.3-33.8 0 0 10.7-3.4 35.1 13.1a122.3 122.3 0 0 1 64 0c24.3-16.5 35-13.1 35-13.1 7 17.6 2.6 30.6 1.3 33.8 8.2 9 13.2 20.4 13.2 34.4 0 49.1-29.9 59.9-58.4 63.1 4.6 3.9 8.7 11.7 8.7 23.6 0 17-.2 30.8-.2 35 0 3.4 2.3 7.4 8.9 6.1A128 128 0 0 0 256 128C256 57.3 198.7 0 128 0z"/></svg>',
+  '<svg viewBox="0 0 256 256" fill="#fff"><path d="M128 0C57.3 0 0 57.3 0 128c0 70.7 57.3 128 128 128s128-57.3 128-128S198.7 0 128 0zm58.7 184.6c-2.3 3.8-7.2 5-11 2.6-30-18.3-67.9-22.5-112.4-12.3a8 8 0 0 1-3.5-15.6c48.8-11.1 90.6-6.3 124.3 14.3 3.8 2.3 5 7.2 2.6 11zm15.7-34.8c-2.9 4.7-9 6.2-13.7 3.3-34.4-21.1-86.9-27.3-127.6-14.9-5.3 1.6-10.8-1.4-12.4-6.6-1.6-5.3 1.4-10.9 6.6-12.5 46.5-14.1 104.3-7.2 143.8 17 4.7 2.9 6.2 9 3.3 13.7zm1.4-36.3C162.5 89 94.4 86.7 55 98.7c-6.3 1.9-13-1.7-14.9-8-1.9-6.3 1.6-13 8-14.9C93.3 62 168.4 64.7 215.9 92.9c5.7 3.4 7.6 10.7 4.2 16.4-3.4 5.7-10.7 7.6-16.4 4.2z"/></svg>',
+  '<svg viewBox="0 0 256 256" fill="#fff"><path d="M50 0h156c27.6 0 50 22.4 50 50v156c0 27.6-22.4 50-50 50H50c-27.6 0-50-22.4-50-50V50C0 22.4 22.4 0 50 0zm46 78v100l86-50z" opacity=".9"/></svg>',
+  '<svg viewBox="0 0 256 222" fill="#fff"><path d="m128 0 128 221.7H0z"/></svg>',
+  '<svg viewBox="0 0 256 256" fill="#fff"><path d="M128 24c57.4 0 104 46.6 104 104s-46.6 104-104 104S24 185.4 24 128 70.6 24 128 24zm-30 60v88l72-44z" opacity=".85"/></svg>',
+];
+
+/* виртуальный ассистент поддержки, закреплён в мэтчах */
+const SUPPORT = { id: 'support', name: 'Поддержка MentorMatch', headline: 'Всегда на связи · бот', role: 'support', verified: 1, support: true };
+
+/* ---------- темы оформления ---------- */
+const THEMES = [
+  { id: 'neon', label: 'Неон' },
+  { id: 'dark', label: 'Тёмная' },
+  { id: 'light', label: 'Светлая' },
+  { id: 'custom', label: 'Своя' },
+];
+const hexToRgb = (h) => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map((x) => x + x).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const rgbToHex = (r, g, b) => '#' + [r, g, b].map((x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+const mixHex = (a, b, t) => { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t); };
+const lum = (hex) => { const [r, g, b] = hexToRgb(hex).map((x) => x / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+
+function applyTheme(theme, custom) {
+  const root = document.documentElement;
+  ['--primary', '--primary-dark', '--primary-soft', '--primary-tint', '--on-primary', '--accent', '--lavender'].forEach((v) => root.style.removeProperty(v));
+  if (theme === 'custom' && custom) {
+    root.dataset.theme = 'custom';
+    root.style.setProperty('--primary', custom);
+    root.style.setProperty('--primary-dark', mixHex(custom, '#000000', 0.12));
+    root.style.setProperty('--primary-soft', mixHex(custom, '#17141C', 0.82));
+    root.style.setProperty('--primary-tint', mixHex(custom, '#17141C', 0.88));
+    root.style.setProperty('--accent', custom);
+    root.style.setProperty('--lavender', custom);
+    root.style.setProperty('--on-primary', lum(custom) > 0.6 ? '#1C1726' : '#ffffff');
+  } else {
+    root.dataset.theme = theme || 'neon';
+  }
+}
+
+function loadTheme() {
+  const theme = localStorage.getItem('mm_theme') || 'neon';
+  applyTheme(theme, localStorage.getItem('mm_custom') || '#C2B0DC');
+}
+function saveTheme(theme, custom) {
+  localStorage.setItem('mm_theme', theme);
+  if (custom) localStorage.setItem('mm_custom', custom);
+  applyTheme(theme, custom || localStorage.getItem('mm_custom') || '#C2B0DC');
+}
+loadTheme();
+
+/* ---------- интерактивный фон: неоновый трейсер за курсором ---------- */
+function mountFx() {
+  if (fxStop || localStorage.getItem('mm_fx') !== 'on') return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c = el('<canvas id="fxCanvas" aria-hidden="true"></canvas>');
+  document.body.appendChild(c);
+  const ctx = c.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const resize = () => { dpr = Math.min(window.devicePixelRatio || 1, 2); c.width = innerWidth * dpr; c.height = innerHeight * dpr; c.style.width = innerWidth + 'px'; c.style.height = innerHeight + 'px'; };
+  resize();
+  let mx = innerWidth / 2 * dpr, my = innerHeight / 2 * dpr, px = mx, py = my;
+  const trail = [];
+  const onMove = (e) => { mx = e.clientX * dpr; my = e.clientY * dpr; };
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('resize', resize);
+  let raf;
+  const draw = () => {
+    px += (mx - px) * 0.16; py += (my - py) * 0.16;
+    trail.push({ x: px, y: py });
+    if (trail.length > 46) trail.shift();
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let i = 1; i < trail.length; i++) {
+      const t = i / trail.length;
+      const hue = 266 + Math.sin(i * 0.32 + performance.now() * 0.001) * 34; // лаванда ↔ розовый
+      ctx.strokeStyle = `hsla(${hue}, 70%, 74%, ${t * 0.5})`;
+      ctx.shadowColor = `hsla(${hue}, 85%, 70%, 0.9)`;
+      ctx.shadowBlur = 18 * dpr;
+      ctx.lineWidth = (1 + t * 7) * dpr;
+      ctx.beginPath();
+      ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
+      ctx.lineTo(trail[i].x, trail[i].y);
+      ctx.stroke();
+    }
+    raf = requestAnimationFrame(draw);
+  };
+  draw();
+  fxStop = () => { cancelAnimationFrame(raf); window.removeEventListener('pointermove', onMove); window.removeEventListener('resize', resize); c.remove(); fxStop = null; };
+}
+function unmountFx() { if (fxStop) fxStop(); }
+function setFx(on) { localStorage.setItem('mm_fx', on ? 'on' : 'off'); on ? mountFx() : unmountFx(); }
 
 /* ---------- tiny helpers ---------- */
 const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
@@ -68,11 +168,48 @@ function toast(msg) {
 
 async function enterApp(view) {
   destroyGlobe();
+  unmountAuthLogos();
   topbar.classList.remove('hidden');
   footer.classList.remove('hidden');
   bindNav();
+  mountNotes();
+  mountFx();
   await refreshMatches();
   go(view);
+}
+
+/* ---------- личные заметки (кнопка снизу слева, localStorage) ---------- */
+function mountNotes() {
+  if (document.getElementById('notesFab')) { document.getElementById('notesFab').classList.remove('hidden'); return; }
+  const key = () => 'mm_notes_' + (state.me ? state.me.id : 'guest');
+  const fab = el(`<button id="notesFab" class="notes-fab" aria-label="Заметки" title="Мои заметки">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12l-5 4H4z"/><path d="M15 20v-4h4M8 9h8M8 13h5"/></svg>
+  </button>`);
+  const panel = el(`<div id="notesPanel" class="notes-panel hidden">
+    <div class="notes-head"><b>Мои заметки</b><span class="notes-save" id="notesSaved"></span></div>
+    <textarea id="notesArea" placeholder="Цели, идеи, вопросы менторам… сохраняется автоматически"></textarea>
+  </div>`);
+  document.body.appendChild(panel);
+  document.body.appendChild(fab);
+  const area = panel.querySelector('#notesArea');
+  const saved = panel.querySelector('#notesSaved');
+  area.value = localStorage.getItem(key()) || '';
+  let t;
+  area.oninput = () => {
+    localStorage.setItem(key(), area.value);
+    saved.textContent = '✓ сохранено';
+    clearTimeout(t); t = setTimeout(() => (saved.textContent = ''), 1500);
+  };
+  fab.onclick = () => {
+    panel.classList.toggle('hidden');
+    fab.classList.toggle('on', !panel.classList.contains('hidden'));
+    if (!panel.classList.contains('hidden')) { area.value = localStorage.getItem(key()) || ''; area.focus(); }
+  };
+}
+
+function unmountNotes() {
+  document.getElementById('notesFab')?.remove();
+  document.getElementById('notesPanel')?.remove();
 }
 
 function bindNav() {
@@ -89,6 +226,7 @@ function setActiveTab(view) {
 }
 
 function go(view) {
+  if (heroShaderStop) { heroShaderStop(); heroShaderStop = null; }
   setActiveTab(view);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (view === 'home') renderHome();
@@ -101,6 +239,24 @@ function go(view) {
 /* ===================================================================
    AUTH (landing + login/register)
 =================================================================== */
+/* логотипы партнёров живут в тёмных полях ПО БОКАМ от карточки авторизации */
+function mountAuthLogos() {
+  if (document.getElementById('authLogos')) return;
+  const wrap = el(`<div id="authLogos" aria-hidden="true">${logoRail('left')}${logoRail('right')}</div>`);
+  document.body.appendChild(wrap);
+}
+function unmountAuthLogos() { document.getElementById('authLogos')?.remove(); }
+
+/* фоновые колонки логотипов партнёров: слева текут вниз, справа вверх */
+function logoRail(side) {
+  const cols = [0, 1, 2].map((c) => {
+    const set = PARTNER_LOGOS.slice(c).concat(PARTNER_LOGOS.slice(0, c)); // ротация для разнообразия
+    const items = set.concat(set).map((svg) => `<span class="logo-chip">${svg}</span>`).join('');
+    return `<div class="logo-col c${c}">${items}</div>`;
+  }).join('');
+  return `<div class="logo-rail ${side}" aria-hidden="true">${cols}</div>`;
+}
+
 function renderAuth(mode = 'register') {
   topbar.classList.add('hidden');
   footer.classList.add('hidden');
@@ -148,16 +304,21 @@ function renderAuth(mode = 'register') {
       </section>
     </div>`);
   app.appendChild(view);
+  mountAuthLogos();
   initGlobe();
   renderAuthCard(mode);
 }
 
 function renderAuthCard(mode) {
+  const tabs = document.querySelector('.tab-switch');
+  if (tabs) tabs.classList.toggle('on-register', mode === 'register');
   document.querySelectorAll('.tab-switch button').forEach((b) => {
     b.classList.toggle('active', b.dataset.m === mode);
     b.onclick = () => renderAuthCard(b.dataset.m);
   });
-  document.getElementById('authForm').innerHTML = '';
+  const af = document.getElementById('authForm');
+  af.dataset.mode = mode;
+  af.innerHTML = '';
   mode === 'login' ? loginForm() : registerForm();
 }
 
@@ -314,6 +475,7 @@ function renderHome() {
   const view = el(`
     <div class="view">
       <section class="home-hero">
+        <canvas class="hero-shader" id="heroShader" aria-hidden="true"></canvas>
         <span class="eyebrow"><span class="dot"></span> Привет, ${esc(first)}</span>
         <h1>Найди ${esc(target)} и расти быстрее</h1>
         <p class="lead">Листай анкеты как в Tinder, ставь «интересно» и получай мэтч при взаимной симпатии. Затем — живое общение в чате о карьере и учёбе.</p>
@@ -362,15 +524,102 @@ function renderHome() {
       <div class="section-head"><h2>Почему MentorMatch</h2><p>Менторство, которое начинается с симпатии — как любимое приложение для знакомств, только про карьеру и учёбу.</p></div>
       <div class="value-grid">${valueCards}</div>
 
+      <div class="top-banner">
+        <div class="tb-text">
+          <span class="tb-eyebrow">${iconTrophy()} Рейтинг месяца</span>
+          <h3>Топ менторов месяца</h3>
+          <p>Лучшие по отзывам, оценкам и выполненным заданиям. Обновляется каждый месяц.</p>
+        </div>
+        <button class="btn btn-white" data-go="top">Смотреть топ</button>
+      </div>
+
       <div class="section-head"><h2>Готов попробовать?</h2><p>Несколько свайпов — и ты на связи с нужным человеком.</p></div>
       <div style="text-align:center"><button class="btn btn-primary" data-go="deck">Перейти к поиску</button></div>
     </div>`);
   app.innerHTML = '';
   app.appendChild(view);
   view.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(b.dataset.go)));
+  initHeroShader();
   view.querySelectorAll('[data-scroll]').forEach((b) => (b.onclick = () => {
     document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
+}
+
+/* ---------- анимированный shader-фон hero (vanilla WebGL, палитра бренда) ---------- */
+function initHeroShader() {
+  const canvas = document.getElementById('heroShader');
+  if (!canvas) return;
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return; // нет WebGL — остаётся CSS-градиент под канвасом
+
+  const vs = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
+  // живая aurora: domain-warped fbm в палитре бренда, тёмная база — вписывается в тему
+  const fs = `
+    precision highp float;
+    uniform vec2 u_res; uniform float u_t;
+    vec3 C_BG = vec3(0.082,0.066,0.118); // глубокий плам
+    vec3 C1 = vec3(0.760,0.690,0.863);   // лаванда #C2B0DC
+    vec3 C2 = vec3(0.765,0.604,0.557);   // розовый #C39A8E
+    vec3 C3 = vec3(0.420,0.345,0.560);   // фиолет
+    vec3 C4 = vec3(0.620,0.475,0.439);   // тёплый коричневый
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+    float noise(vec2 p){
+      vec2 i=floor(p), f=fract(p);
+      float a=hash(i), b=hash(i+vec2(1.,0.)), c=hash(i+vec2(0.,1.)), d=hash(i+vec2(1.,1.));
+      vec2 u=f*f*(3.-2.*f);
+      return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+    }
+    float fbm(vec2 p){ float v=0., a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.0; a*=0.5; } return v; }
+    void main(){
+      vec2 uv = gl_FragCoord.xy / u_res.xy;
+      vec2 p = uv; p.x *= u_res.x / u_res.y;
+      float t = u_t * 0.05;
+      vec2 q = vec2(fbm(p*1.6 + vec2(0.0, t)), fbm(p*1.6 + vec2(5.2, -t)));
+      vec2 r = vec2(fbm(p*1.6 + 2.0*q + vec2(1.7, t*1.3)), fbm(p*1.6 + 2.0*q + vec2(8.3, -t*0.9)));
+      float f = fbm(p*1.6 + 2.4*r);
+      vec3 col = C_BG;
+      col = mix(col, C3, clamp(f*1.4, 0.0, 1.0));
+      col = mix(col, C1, clamp(length(q)*0.9, 0.0, 1.0));
+      col = mix(col, C2, clamp(r.x*r.x*1.3, 0.0, 1.0));
+      col = mix(col, C4, clamp(pow(r.y, 2.0)*0.7, 0.0, 1.0));
+      col *= 0.82 + 0.30*f;                       // глубина
+      col += 0.025 * (hash(uv*u_res.xy*0.5 + t) - 0.5); // тонкое зерно
+      gl_FragColor = vec4(col, 1.0);
+    }`;
+
+  const compile = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uRes = gl.getUniformLocation(prog, 'u_res');
+  const uT = gl.getUniformLocation(prog, 'u_t');
+
+  const resize = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = canvas.clientWidth * dpr, h = canvas.clientHeight * dpr;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; gl.viewport(0,0,w,h); }
+  };
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let raf = 0, start = performance.now();
+  const draw = (now) => {
+    resize();
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uT, (now - start) / 1000);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (!reduced) raf = requestAnimationFrame(draw);
+  };
+  raf = requestAnimationFrame(draw);
+  heroShaderStop = () => { cancelAnimationFrame(raf); };
 }
 
 /* ===================================================================
@@ -562,8 +811,9 @@ function buildCard(u) {
   const tags = u.skills.slice(0, 6).map((t) => `<span class="tag">${esc(t)}</span>`).join('');
   return el(`
     <article class="card" data-id="${u.id}">
-      <span class="stamp like">ИНТЕРЕСНО</span>
-      <span class="stamp nope">ПРОПУСК</span>
+      <div class="card-glow" aria-hidden="true"></div>
+      <span class="stamp like" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <span class="stamp nope" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
       <div class="card-banner" style="background:${grad}">
         <span class="role-chip">${roleLabel(u.role)}</span>
         ${u.experience ? `<div class="exp-badge" title="${u.experience} лет опыта"><b>${u.experience}</b><small>лет</small></div>` : ''}
@@ -601,6 +851,15 @@ function enableDrag(card, user) {
   let startX = 0, startY = 0, dx = 0, dy = 0, dragging = false;
   const likeStamp = card.querySelector('.stamp.like');
   const nopeStamp = card.querySelector('.stamp.nope');
+  const glow = card.querySelector('.card-glow');
+  const setIndicators = (o, dir) => {
+    likeStamp.style.opacity = dir === 'like' ? o : 0;
+    nopeStamp.style.opacity = dir === 'nope' ? o : 0;
+    likeStamp.style.transform = `translate(-50%,-50%) scale(${0.6 + (dir === 'like' ? o : 0) * 0.4})`;
+    nopeStamp.style.transform = `translate(-50%,-50%) scale(${0.6 + (dir === 'nope' ? o : 0) * 0.4})`;
+    glow.style.opacity = o;
+    glow.className = 'card-glow' + (dir ? ' ' + dir : '');
+  };
 
   const onDown = (e) => {
     if (e.target.closest('.card-body') && e.target.closest('.card-body').scrollHeight > e.target.closest('.card-body').clientHeight && e.type === 'touchstart') {
@@ -622,8 +881,8 @@ function enableDrag(card, user) {
     if (Math.abs(dx) > 6 && e.cancelable) e.preventDefault();
     const rot = dx / 18;
     card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
-    likeStamp.style.opacity = dx > 0 ? Math.min(dx / 90, 1) : 0;
-    nopeStamp.style.opacity = dx < 0 ? Math.min(-dx / 90, 1) : 0;
+    const o = Math.min(Math.abs(dx) / 90, 1);
+    setIndicators(o, dx > 4 ? 'like' : dx < -4 ? 'nope' : '');
   };
   const onUp = () => {
     if (!dragging) return;
@@ -638,7 +897,7 @@ function enableDrag(card, user) {
     else if (dx < -threshold) flyOut(card, 'skip');
     else {
       card.style.transform = '';
-      likeStamp.style.opacity = 0; nopeStamp.style.opacity = 0;
+      setIndicators(0, '');
     }
   };
   card.addEventListener('mousedown', onDown);
@@ -838,14 +1097,40 @@ async function renderMatches() {
   const view = el(`
     <div class="view">
       <div class="list-head"><h2>Твои мэтчи</h2><p>Здесь все, с кем у тебя взаимный интерес. Напиши первым!</p></div>
-      <div id="matchList"></div>
+      <div class="seg" role="tablist">
+        <button data-mv="list" role="tab">${iconList()} Список</button>
+        <button data-mv="orbit" role="tab">${iconOrbit()} Орбита</button>
+      </div>
+      <button class="support-card" id="supportCard">
+        <div class="av support">${iconHeadset()}</div>
+        <div class="info">
+          <b>${esc(SUPPORT.name)} ${vCheck(SUPPORT)}</b>
+          <div class="ml">Вопрос по платформе? Напиши — поможем 24/7</div>
+        </div>
+        <span class="pin-badge">${iconPin2()} Закреплено</span>
+      </button>
+      <div id="matchBody"></div>
     </div>`);
   app.innerHTML = '';
   app.appendChild(view);
-  const list = view.querySelector('#matchList');
+  view.querySelector('#supportCard').onclick = openSupportChat;
+  view.querySelectorAll('[data-mv]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.mv === matchView);
+    b.onclick = () => {
+      if (matchView === b.dataset.mv) return;
+      matchView = b.dataset.mv;
+      view.querySelectorAll('[data-mv]').forEach((x) => x.classList.toggle('on', x.dataset.mv === matchView));
+      paintMatchBody();
+    };
+  });
+  paintMatchBody();
+}
 
+function paintMatchBody() {
+  const body = document.getElementById('matchBody');
+  if (!body) return;
   if (!state.matches.length) {
-    list.innerHTML = `
+    body.innerHTML = `
       <div class="empty-state">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
         <h3>Пока нет мэтчей</h3>
@@ -854,7 +1139,9 @@ async function renderMatches() {
       </div>`;
     return;
   }
+  if (matchView === 'orbit') { paintMatchOrbit(body); return; }
 
+  body.innerHTML = '';
   const grid = el('<div class="match-grid"></div>');
   state.matches.forEach((mt) => {
     const u = mt.user;
@@ -870,7 +1157,67 @@ async function renderMatches() {
     card.onclick = () => openChat(mt);
     grid.appendChild(card);
   });
-  list.appendChild(grid);
+  body.appendChild(grid);
+}
+
+/* радиальное орбитальное меню: свой аватар в центре, мэтчи по кругу.
+   Кольцо плавно вращается; при наведении доворачивается так, чтобы
+   наведённый аватар встал в верхнюю точку. */
+function paintMatchOrbit(body) {
+  const list = state.matches.slice(0, 12);
+  const me = state.me;
+  const orbit = el(`
+    <div class="orbit">
+      <div class="orbit-line" aria-hidden="true"></div>
+      <div class="orbit-center" title="${esc(me.name)}">
+        <div class="av" style="${avStyle(me)}">${avText(me)}</div>
+        <span>Это ты</span>
+      </div>
+      <div class="orbit-stage"></div>
+      <p class="orbit-hint">Наведи на аватар — он поднимется наверх. Клик — открыть чат.</p>
+    </div>`);
+  body.innerHTML = '';
+  body.appendChild(orbit);
+  const stage = orbit.querySelector('.orbit-stage');
+
+  const TOP = -Math.PI / 2;
+  let hover = -1;
+  const items = list.map((mt, i) => {
+    const u = mt.user;
+    const base = (i / list.length) * Math.PI * 2;
+    const node = el(`
+      <button class="orbit-item" title="${esc(u.name)}">
+        <div class="av" style="${avStyle(u)}">${avText(u)}</div>
+        <span class="orbit-name">${esc(u.name.split(' ')[0])}</span>
+      </button>`);
+    node.onclick = () => openChat(mt);
+    node.addEventListener('pointerenter', () => { hover = i; });
+    node.addEventListener('pointerleave', () => { if (hover === i) hover = -1; });
+    stage.appendChild(node);
+    return { node, base };
+  });
+
+  let phi = TOP;
+  const frame = () => {
+    if (!document.body.contains(orbit)) return; // ушли со страницы — стоп
+    if (hover >= 0) {
+      const target = TOP - items[hover].base;
+      let d = ((target - phi + Math.PI) % (Math.PI * 2)) - Math.PI; // кратчайший доворот
+      phi += d * 0.12;
+    } else {
+      phi += 0.0035;
+    }
+    const r = Math.max(70, stage.clientWidth / 2 - 38);
+    items.forEach((it, i) => {
+      const a = it.base + phi;
+      const x = Math.cos(a) * r, y = Math.sin(a) * r;
+      it.node.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+      it.node.style.zIndex = String(10 + Math.round(Math.cos(a - TOP) * 8));
+      it.node.classList.toggle('focused', i === hover);
+    });
+    requestAnimationFrame(frame);
+  };
+  frame();
 }
 
 async function openChat(mt) {
@@ -886,7 +1233,9 @@ async function openChat(mt) {
             <div class="av" style="${avStyle(u)}">${avText(u)}</div>
             <div><b>${esc(u.name)} ${vCheck(u)}</b><div style="font-size:13px;color:var(--gray)">${esc(u.headline || roleLabel(u.role))}</div></div>
           </button>
+          <button class="chat-tasks-btn" id="tasksBtn" aria-label="Задания">${iconTask()}<span>Задания</span></button>
         </div>
+        <div class="task-panel hidden" id="taskPanel"></div>
         <div class="chat-log" id="chatLog"><div class="spinner"></div></div>
         <form class="chat-form" id="chatForm">
           <input name="body" placeholder="Напиши сообщение…" autocomplete="off" maxlength="1000" />
@@ -926,6 +1275,132 @@ async function openChat(mt) {
     try { await api('/messages/' + mt.match_id, { method: 'POST', body: { body: text } }); }
     catch (err) { toast(err.message); }
   };
+
+  // ---- задания и бонусы ----
+  const panel = view.querySelector('#taskPanel');
+  const tasksBtn = view.querySelector('#tasksBtn');
+  const isMentor = state.me.role === 'mentor';
+  let tasksLoaded = false;
+
+  const renderTasks = (tasks) => {
+    const items = tasks.map((t) => {
+      const done = t.status === 'done';
+      const canDone = !done && t.student_id === state.me.id;
+      return `
+        <div class="task-item ${done ? 'done' : ''}">
+          <span class="task-check">${done ? iconCheckSm() : '<i></i>'}</span>
+          <span class="task-title">${esc(t.title)}</span>
+          ${canDone ? `<button class="btn btn-primary btn-sm" data-done="${t.id}">Выполнено +${10}</button>` : ''}
+          ${done ? '<span class="task-badge">+10 бонусов</span>' : ''}
+        </div>`;
+    }).join('') || '<p class="muted-note" style="padding:4px 2px">Пока нет заданий. Менторство — это практика 💪</p>';
+    panel.innerHTML = `
+      <div class="task-head">
+        <b>Задания</b>
+        <span class="task-hint">${isMentor ? 'Выдай задание — студент получит бонусы за выполнение' : 'Выполняй задания ментора и копи бонусы'}</span>
+      </div>
+      <div class="task-list">${items}</div>
+      ${isMentor ? `
+        <form class="task-form" id="taskForm">
+          <input name="title" placeholder="Новое задание для студента…" maxlength="160" required>
+          <button class="btn btn-primary btn-sm" type="submit">Дать</button>
+        </form>` : ''}`;
+
+    panel.querySelectorAll('[data-done]').forEach((b) => (b.onclick = async () => {
+      b.disabled = true;
+      try {
+        const res = await api(`/tasks/${b.dataset.done}/done`, { method: 'POST' });
+        state.me = res.me;
+        toast(`Задание выполнено! +${res.earned} бонусов`);
+        renderTasks(res.tasks);
+      } catch (err) { toast(err.message); b.disabled = false; }
+    }));
+    const tf = panel.querySelector('#taskForm');
+    if (tf) tf.onsubmit = async (e) => {
+      e.preventDefault();
+      const title = e.target.title.value.trim();
+      if (!title) return;
+      e.target.title.value = '';
+      try { renderTasks(await api('/tasks/' + mt.match_id, { method: 'POST', body: { title } })); }
+      catch (err) { toast(err.message); }
+    };
+  };
+
+  tasksBtn.onclick = async () => {
+    panel.classList.toggle('hidden');
+    tasksBtn.classList.toggle('on', !panel.classList.contains('hidden'));
+    if (!tasksLoaded && !panel.classList.contains('hidden')) {
+      tasksLoaded = true;
+      panel.innerHTML = '<div class="spinner" style="margin:18px auto"></div>';
+      try { renderTasks(await api('/tasks/' + mt.match_id)); }
+      catch (e) { panel.innerHTML = '<p class="muted-note" style="padding:8px">Не удалось загрузить задания.</p>'; }
+    }
+  };
+}
+
+/* ---------- чат с ботом поддержки (локальный, без бэкенда) ---------- */
+function supportReply(text) {
+  const t = text.toLowerCase();
+  if (/привет|здравств|хай|hello|ку\b/.test(t)) return 'Привет! 👋 Я бот поддержки MentorMatch. Чем помочь — мэтчи, профиль, PRO или задания?';
+  if (/pro|про|подписк|оплат|деньг|цен/.test(t)) return 'PRO продвигает твою анкету выше в поиске и снимает лимит портфолио. Оформить можно в Профиле → кнопка «MentorMatch PRO». Стоит 299 ₽/мес.';
+  if (/мэтч|match|свайп|лайк/.test(t)) return 'Мэтч появляется при взаимном «интересно». Свайпай анкеты во вкладке «Искать» — взаимные симпатии окажутся здесь, в «Мэтчах».';
+  if (/бонус|задани|балл/.test(t)) return 'Бонусы начисляются за выполненные задания от ментора (+10 за каждое). Открой чат с ментором → кнопка «Задания».';
+  if (/верифи|галоч|проверк/.test(t)) return 'Галочка верификации подтверждает личность ментора. Напиши нам на help@mentormatch.io — проверим профиль.';
+  if (/профил|аватар|редакт/.test(t)) return 'Профиль редактируется во вкладке «Профиль»: фото, навыки, цель и опыт. Чем полнее анкета — тем точнее мэтчи.';
+  if (/спасиб|благодар|ок\b|понял/.test(t)) return 'Рад помочь! Если что-то ещё — пиши, я всегда на связи. 🙌';
+  return 'Записал твой вопрос. Если срочно — пиши на help@mentormatch.io, ответим в течение дня. Чем ещё помочь?';
+}
+
+function openSupportChat() {
+  const key = 'mm_support_' + (state.me ? state.me.id : 'guest');
+  let msgs = [];
+  try { msgs = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) {}
+  if (!msgs.length) msgs = [{ me: false, body: 'Привет! 👋 Я бот поддержки MentorMatch. Спроси про мэтчи, PRO, бонусы или профиль — помогу.' }];
+
+  const view = el(`
+    <div class="view">
+      <div class="chat">
+        <div class="chat-head">
+          <button class="back" aria-label="Назад"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <div class="chat-peer" style="cursor:default">
+            <div class="av support">${iconHeadset()}</div>
+            <div><b>${esc(SUPPORT.name)} ${vCheck(SUPPORT)}</b><div style="font-size:13px;color:var(--success)">● онлайн · обычно отвечает сразу</div></div>
+          </div>
+        </div>
+        <div class="chat-log" id="chatLog"></div>
+        <form class="chat-form" id="chatForm">
+          <input name="body" placeholder="Опиши вопрос…" autocomplete="off" maxlength="1000" />
+          <button class="btn btn-primary" type="submit" aria-label="Отправить"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg></button>
+        </form>
+      </div>
+    </div>`);
+  app.innerHTML = '';
+  app.appendChild(view);
+  view.querySelector('.back').onclick = () => renderMatches();
+
+  const log = view.querySelector('#chatLog');
+  const save = () => { try { localStorage.setItem(key, JSON.stringify(msgs.slice(-50))); } catch (e) {} };
+  const paint = () => {
+    log.innerHTML = '';
+    msgs.forEach((m) => log.appendChild(el(`<div class="bubble ${m.me ? 'me' : 'them'}">${esc(m.body)}</div>`)));
+    log.scrollTop = log.scrollHeight;
+  };
+  paint();
+
+  view.querySelector('#chatForm').onsubmit = (e) => {
+    e.preventDefault();
+    const input = e.target.body;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    msgs.push({ me: true, body: text }); paint(); save();
+    const typing = el('<div class="bubble them typing"><span></span><span></span><span></span></div>');
+    log.appendChild(typing); log.scrollTop = log.scrollHeight;
+    setTimeout(() => {
+      typing.remove();
+      msgs.push({ me: false, body: supportReply(text) }); paint(); save();
+    }, 650);
+  };
 }
 
 /* ===================================================================
@@ -935,10 +1410,10 @@ async function renderTop() {
   app.innerHTML = '<div class="spinner" role="status"></div>';
   let list;
   try { list = await api('/top'); } catch (e) { toast(e.message); return; }
-  const medals = ['🥇', '🥈', '🥉'];
+  const medal = (i) => `<span class="rank-medal r${i + 1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9 13.5 7 22l5-3 5 3-2-8.5"/></svg><b>${i + 1}</b></span>`;
   const rows = list.map((u, i) => `
-    <button class="top-row${i < 3 ? ' podium' : ''}" data-id="${u.id}">
-      <div class="top-pos">${i < 3 ? `<span class="medal">${medals[i]}</span>` : (i + 1)}</div>
+    <button class="top-row${i < 3 ? ' podium r' + (i + 1) : ''}" data-id="${u.id}">
+      <div class="top-pos">${i < 3 ? medal(i) : (i + 1)}</div>
       <div class="lrow-av" style="${avStyle(u)}">${avText(u)}</div>
       <div class="lrow-main">
         <div class="lrow-name">${esc(u.name)} ${vCheck(u)} ${proBadge(u)}</div>
@@ -1004,6 +1479,59 @@ function openSubscribe() {
 function iconCheckSm() { return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'; }
 
 /* ===================================================================
+   ОФОРМЛЕНИЕ (тема + интерактивный фон)
+=================================================================== */
+function openAppearance() {
+  const curTheme = localStorage.getItem('mm_theme') || 'neon';
+  const fxOn = localStorage.getItem('mm_fx') === 'on';
+  const m = el(`
+    <div class="modal-scrim">
+      <div class="match-modal" role="dialog" aria-modal="true" style="text-align:left;max-width:440px">
+        <h2 style="color:var(--ink);font-size:22px">Оформление</h2>
+        <p style="color:var(--gray);margin:4px 0 18px;font-size:13px">Тема интерфейса и интерактивный фон.</p>
+
+        <div class="theme-head"><b>Тема</b></div>
+        <div class="theme-row" id="apThemeRow">
+          ${THEMES.map((t) => `<button type="button" class="theme-opt sw-${t.id}" data-theme="${t.id}"><span class="sw"></span>${esc(t.label)}</button>`).join('')}
+        </div>
+        <div class="theme-custom ${curTheme === 'custom' ? '' : 'hidden'}" id="apThemeCustom">
+          <label>Свой акцентный цвет <input type="color" id="apCustomColor" value="${esc(localStorage.getItem('mm_custom') || '#C2B0DC')}"></label>
+        </div>
+
+        <div class="ap-toggle">
+          <div><b>Интерактивный фон</b><span>Неоновый трейсер за курсором</span></div>
+          <button class="switch ${fxOn ? 'on' : ''}" id="apFx" role="switch" aria-checked="${fxOn}"><span></span></button>
+        </div>
+
+        <div class="row" style="margin-top:8px"><button class="btn btn-primary btn-block" data-close>Готово</button></div>
+      </div>
+    </div>`);
+  modalRoot.appendChild(m);
+  const close = () => m.remove();
+  m.querySelector('[data-close]').onclick = close;
+  m.onclick = (e) => { if (e.target === m) close(); };
+
+  const row = m.querySelector('#apThemeRow');
+  const custom = m.querySelector('#apThemeCustom');
+  const mark = (t) => { row.querySelectorAll('.theme-opt').forEach((b) => b.classList.toggle('active', b.dataset.theme === t)); custom.classList.toggle('hidden', t !== 'custom'); };
+  mark(curTheme);
+  row.querySelectorAll('.theme-opt').forEach((b) => (b.onclick = () => {
+    const t = b.dataset.theme;
+    saveTheme(t, t === 'custom' ? m.querySelector('#apCustomColor').value : null);
+    mark(t);
+  }));
+  m.querySelector('#apCustomColor').oninput = (e) => { saveTheme('custom', e.target.value); mark('custom'); };
+
+  const fxBtn = m.querySelector('#apFx');
+  fxBtn.onclick = () => {
+    const on = !fxBtn.classList.contains('on');
+    fxBtn.classList.toggle('on', on);
+    fxBtn.setAttribute('aria-checked', on);
+    setFx(on);
+  };
+}
+
+/* ===================================================================
    PROFILE
 =================================================================== */
 async function renderProfile() {
@@ -1035,6 +1563,26 @@ async function renderProfile() {
             ${u.verified ? '' : isMentor ? '<span class="muted-note" style="margin-left:8px">не верифицирован</span>' : ''}
           </div>
         </div>
+
+        <div class="pro-banner ${u.subscribed ? 'active' : ''}">
+          <div class="pb-main">
+            <span class="pro-badge lg">PRO</span>
+            <div class="pb-text">
+              <b>${u.subscribed ? 'PRO активен' : 'MentorMatch PRO'}</b>
+              <p>${u.subscribed ? 'Анкета продвигается выше, портфолио без лимита.' : 'Продвигай анкету выше в поиске и сними лимит портфолио — 299 ₽/мес.'}</p>
+            </div>
+          </div>
+          <button class="btn ${u.subscribed ? 'btn-ghost' : 'btn-primary'} btn-sm" id="proBtn">${u.subscribed ? 'Управлять' : 'Оформить PRO'}</button>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat"><b>${u.bonus_points || 0}</b><span>бонусов</span></div>
+          <div class="stat"><b>${u.completed_tasks || 0}</b><span>заданий выполнено</span></div>
+          <div class="stat"><b>${full.rating || '—'}</b><span>рейтинг</span></div>
+        </div>
+
+        <button class="btn btn-ghost appearance-btn" type="button" id="appearanceBtn">${iconBrush()} Оформление — тема и фон</button>
+
         <form id="profForm">
           <div class="field"><label>Имя</label><input name="name" value="${esc(u.name)}"></div>
           <div class="field"><label>О себе одной строкой</label><input name="headline" value="${esc(u.headline)}"></div>
@@ -1052,22 +1600,27 @@ async function renderProfile() {
           </div>
           <div class="field"><label>Цель</label><input name="goal" value="${esc(u.goal)}"></div>
           <div class="field"><label>О себе</label><textarea name="bio">${esc(u.bio)}</textarea></div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <button class="btn btn-primary" type="submit">Сохранить</button>
-            <button class="btn btn-ghost" type="button" id="logoutBtn">Выйти</button>
-          </div>
         </form>
 
-        <h3 class="up-section">Портфолио</h3>
+        <div class="up-section-row">
+          <h3 class="up-section">Портфолио</h3>
+          <span class="port-count ${!u.subscribed && full.portfolio.length >= 3 ? 'full' : ''}">${full.portfolio.length} / ${u.subscribed ? '∞' : 3}</span>
+        </div>
         <div class="port-list" id="portList">${portfolio}</div>
-        <form id="portForm" class="port-form">
-          <input name="title" placeholder="Название проекта" required>
-          <input name="descr" placeholder="Кратко о проекте">
-          <input name="link" placeholder="Ссылка (необязательно)">
-          <button class="btn btn-ghost" type="submit">Добавить</button>
-        </form>
+        ${!u.subscribed && full.portfolio.length >= 3
+          ? `<p class="muted-note port-limit">Достигнут лимит бесплатного плана. <a id="portUpsell">Оформи PRO</a> для безлимита.</p>`
+          : `<form id="portForm" class="port-form">
+              <input name="title" placeholder="Название проекта" required>
+              <input name="descr" placeholder="Кратко о проекте">
+              <input name="link" placeholder="Ссылка (необязательно)">
+              <button class="btn btn-ghost" type="submit">Добавить</button>
+            </form>`}
 
         ${full.reviews.length ? `<h3 class="up-section">Отзывы о тебе · ${full.rating}★</h3><div id="myReviews">${reviewsBlock(full.reviews)}</div>` : ''}
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-primary" type="submit" form="profForm" id="saveBtn">${iconSave()} Сохранить изменения</button>
+        <button class="btn btn-danger" type="button" id="logoutBtn">${iconDoor()} Выйти</button>
       </div>
     </div>`);
   app.innerHTML = '';
@@ -1090,23 +1643,30 @@ async function renderProfile() {
 
   view.querySelector('#profForm').onsubmit = async (e) => {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type=submit]');
+    const btn = view.querySelector('#saveBtn');
     btn.disabled = true; btn.textContent = 'Сохраняем…';
     try {
       const body = Object.fromEntries(new FormData(e.target).entries());
       state.me = await api('/me', { method: 'PUT', body });
       toast('Профиль обновлён');
       renderProfile();
-    } catch (err) { toast(err.message); btn.disabled = false; btn.textContent = 'Сохранить'; }
+    } catch (err) { toast(err.message); btn.disabled = false; btn.innerHTML = iconSave() + ' Сохранить изменения'; }
   };
 
+  // PRO-подписка
+  view.querySelector('#proBtn').onclick = openSubscribe;
+  view.querySelector('#portUpsell')?.addEventListener('click', openSubscribe);
+
+  // оформление (тема + интерактивный фон)
+  view.querySelector('#appearanceBtn').onclick = openAppearance;
+
   // портфолио: добавить / удалить
-  view.querySelector('#portForm').onsubmit = async (e) => {
+  view.querySelector('#portForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const body = Object.fromEntries(new FormData(e.target).entries());
     try { await api('/portfolio', { method: 'POST', body }); renderProfile(); }
-    catch (err) { toast(err.message); }
-  };
+    catch (err) { toast(err.message); if (err.message && /PRO/i.test(err.message)) openSubscribe(); }
+  });
   view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
     try { await api('/portfolio/' + b.dataset.del, { method: 'DELETE' }); renderProfile(); }
     catch (err) { toast(err.message); }
@@ -1117,6 +1677,8 @@ async function renderProfile() {
     state.me = null; state.matches = [];
     topbar.classList.add('hidden');
     footer.classList.add('hidden');
+    unmountNotes();
+    unmountFx();
     renderAuth('login');
   };
 }
@@ -1153,6 +1715,14 @@ function iconCards() { return '<svg width="17" height="17" viewBox="0 0 24 24" f
 function iconList() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>'; }
 function iconSearch() { return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'; }
 function iconTagMini() { return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1"/></svg>'; }
+function iconOrbit() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(45 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(-45 12 12)"/></svg>'; }
+function iconHeadset() { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zM20 14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/><path d="M20 18v1a4 4 0 0 1-4 4h-4"/></svg>'; }
+function iconPin2() { return '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-2 2-1-1-3 3 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 3-3-1-1z"/></svg>'; }
+function iconTask() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'; }
+function iconTrophy() { return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>'; }
+function iconBrush() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3c0 1.5-1 2-2 2.5S5 9 5 11a4 4 0 0 0 4 4h1"/><circle cx="9" cy="6.5" r="0.6" fill="currentColor"/><circle cx="7" cy="10" r="0.6" fill="currentColor"/><path d="M13 13l5-5 3 3-5 5-3 1z"/></svg>'; }
+function iconSave() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>'; }
+function iconDoor() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>'; }
 
 function shade(hex) {
   // затемняем цвет для градиента
