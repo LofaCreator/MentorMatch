@@ -1,0 +1,2 @@
+# Шелл-скрипт всегда с LF — иначе bash на Mac/Linux падает на \r
+*.sh text eol=lf
