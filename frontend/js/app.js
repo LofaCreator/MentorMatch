@@ -139,11 +139,17 @@ const money = (n) => n ? new Intl.NumberFormat('ru-RU').format(n) + ' ₽/час
 const proBadge = (u) => (u && u.subscribed) ? '<span class="pro-badge">PRO</span>' : '';
 
 async function api(path, opts = {}) {
-  const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(API + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch (e) {
+    // сеть не дошла до сервера (Failed to fetch): backend не запущен или сайт открыт не через него
+    throw new Error('Нет связи с сервером. Запусти backend (python app.py) и открой сайт по адресу http://localhost:5000');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
   return data;
@@ -159,12 +165,24 @@ function toast(msg) {
    BOOT
 =================================================================== */
 (async function boot() {
+  if (location.protocol === 'file:') { renderRunHint(); return; } // открыли файл напрямую — API недоступен
   try {
     const { user } = await api('/me');
     if (user) { state.me = user; await enterApp('home'); }
     else renderAuth();
   } catch (e) { renderAuth(); }
 })();
+
+/* подсказка, если сайт открыли двойным кликом (file://), а не через сервер */
+function renderRunHint() {
+  app.innerHTML = `
+    <div class="empty-state" style="max-width:600px;margin:60px auto;text-align:left">
+      <h3 style="text-align:center">Запусти сайт через сервер</h3>
+      <p style="margin:14px 0">Файл открыт напрямую (<code>file://</code>), поэтому вход и регистрация не работают — браузер не видит backend. Запусти его:</p>
+      <p style="font-size:13px;line-height:2"><code>cd backend</code><br><code>python -m pip install -r requirements.txt</code><br><code>python app.py</code></p>
+      <p style="margin-top:14px">Затем открой <b>http://localhost:5000</b>.<br>Проще всего — запусти <b>start.bat</b> (Windows) или <b>start.sh</b> (Mac/Linux) из папки проекта.</p>
+    </div>`;
+}
 
 async function enterApp(view) {
   destroyGlobe();
