@@ -920,15 +920,6 @@ body { display: flex; flex-direction: column; }
 /* аккуратнее фокус-кольцо */
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 
-/* премиальная CTA: лёгкий градиент + блик при наведении */
-.btn-primary { isolation: isolate; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); overflow: hidden; }
-.btn-primary::after {
-  content: ''; position: absolute; inset: 0; z-index: -1; /* над фоном, под текстом */
-  background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.28) 50%, transparent 65%);
-  transform: translateX(-130%); transition: transform 0.6s var(--ease);
-}
-.btn-primary:hover::after { transform: translateX(130%); }
-
 /* градиентный акцент на крупных заголовках-«вау» */
 .match-modal h2 {
   background: linear-gradient(120deg, var(--primary), var(--accent));
@@ -941,31 +932,3 @@ body { display: flex; flex-direction: column; }
 /* лёгкий «лифт» тегов */
 .tag, .fchip { transition: transform 0.18s var(--ease), border-color 0.18s var(--ease), color 0.18s var(--ease), background 0.18s var(--ease); }
 .tag:hover { transform: translateY(-1px); border-color: var(--primary); color: var(--ink); }
-
-/* ============================================================
-   PHASE 8: анимированный баннер «Топ менторов месяца»
-   ============================================================ */
-
-/* ----- баннер «Топ менторов месяца»: блик-свип + контурное свечение 60fps ----- */
-@property --tb-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-.top-banner { isolation: isolate; }
-/* блик, мягко проезжающий по карточке */
-.top-banner::before {
-  content: ''; position: absolute; inset: 0; right: auto; top: auto; width: 100%; height: 100%;
-  border-radius: inherit; background: none; opacity: 1; pointer-events: none; z-index: 0;
-  background-image: linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.10) 48%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.10) 52%, transparent 68%);
-  background-size: 230% 100%; background-repeat: no-repeat;
-  animation: tbSheen 5.5s ease-in-out infinite;
-}
-/* вращающееся свечение строго по контуру (через mask-кольцо) */
-.top-banner::after {
-  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  border-radius: inherit; padding: 1.6px;
-  background: conic-gradient(from var(--tb-angle), transparent 0deg, var(--lavender) 50deg, var(--accent) 110deg, transparent 170deg, transparent 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  animation: tbSpin 4s linear infinite;
-}
-.top-banner > * { position: relative; z-index: 1; }   /* контент над бликом, под кольцом-обводкой */
-@keyframes tbSheen { 0% { background-position: 145% 0; } 55%, 100% { background-position: -45% 0; } }
-@keyframes tbSpin { to { --tb-angle: 360deg; } }
