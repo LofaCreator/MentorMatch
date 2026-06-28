@@ -46,7 +46,8 @@ DEMO_USERS = [
 
 
 def seed_demo(conn):
-    pw = generate_password_hash("demo1234")
+    # pbkdf2 — кроссплатформенно (scrypt по умолчанию падает на части систем, напр. LibreSSL)
+    pw = generate_password_hash("demo1234", method="pbkdf2:sha256")
     for i, u in enumerate(DEMO_USERS):
         name, email, role, headline, bio, field, org, skills, goal, location = u
         conn.execute(

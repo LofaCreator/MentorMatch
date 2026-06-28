@@ -95,7 +95,7 @@ def register():
         (
             data["name"].strip(),
             email,
-            generate_password_hash(data["password"]),
+            generate_password_hash(data["password"], method="pbkdf2:sha256"),
             data["role"],
             data.get("headline", "").strip(),
             data.get("bio", "").strip(),
